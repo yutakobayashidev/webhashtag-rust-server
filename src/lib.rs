@@ -60,9 +60,11 @@ async fn tag_json(State(state): State<AppState>, Path(tag): Path<String>) -> Res
         return json_error(StatusCode::BAD_REQUEST, "Invalid tag");
     }
 
-    let Some(entries) = state.store.entries(&tag) else {
+    if !state.config.accepts_tag(&tag) {
         return json_error(StatusCode::NOT_FOUND, "Tag not found");
-    };
+    }
+
+    let entries = state.store.entries(&tag).unwrap_or_default();
 
     (
         StatusCode::OK,
@@ -81,9 +83,12 @@ async fn feed_atom(State(state): State<AppState>, Path(tag): Path<String>) -> Re
         return json_error(StatusCode::BAD_REQUEST, "Invalid tag");
     }
 
-    let Some(atom) = state.store.atom(&tag) else {
+    if !state.config.accepts_tag(&tag) {
         return json_error(StatusCode::NOT_FOUND, "Tag not found");
-    };
+    }
+
+    let entries = state.store.entries(&tag).unwrap_or_default();
+    let atom = atom::build_atom_feed(&tag, state.config.server_host(), &entries);
 
     (
         StatusCode::OK,

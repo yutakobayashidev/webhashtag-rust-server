@@ -138,6 +138,34 @@ async fn registers_article_when_backlink_exists_and_publishes_json_and_atom() {
 }
 
 #[tokio::test]
+async fn exposes_empty_json_and_atom_for_configured_tags() {
+    let article_url = "https://example.com/post";
+    let config = AppConfig::open(
+        "tag.example.com".to_string(),
+        "Programming Tags".to_string(),
+        vec!["rust".to_string()],
+    );
+    let (app, _dir) = test_app(config, verifier_for(article_url, true)).await;
+
+    let (status, body) = get_json(app.clone(), "/tag/rust").await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(
+        body,
+        json!({
+            "tag": "rust",
+            "server": "tag.example.com",
+            "entries": []
+        })
+    );
+
+    let (status, atom) = get_text(app, "/feed/rust").await;
+    assert_eq!(status, StatusCode::OK);
+    assert!(atom.contains("<feed"));
+    assert!(atom.contains("<title>#rust</title>"));
+    assert!(!atom.contains("<entry>"));
+}
+
+#[tokio::test]
 async fn persists_entries_after_reopening_the_store() {
     let article_url = "https://example.com/post";
     let config = AppConfig::open(
