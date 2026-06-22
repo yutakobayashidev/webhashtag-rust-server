@@ -21,6 +21,53 @@ TAGS=rust,typescript cargo run
 
 The server listens on port `3000` by default.
 
+You can also run the flake package directly:
+
+```sh
+TAGS=rust,typescript nix run
+```
+
+## NixOS Service
+
+Import `nixosModules.default` and enable the service:
+
+```nix
+{
+  inputs.webhashtag-rust-server.url = "github:yutakobayashidev/webhashtag-rust-server";
+
+  outputs = { self, nixpkgs, webhashtag-rust-server, ... }: {
+    nixosConfigurations.example = nixpkgs.lib.nixosSystem {
+      system = "x86_64-linux";
+      modules = [
+        webhashtag-rust-server.nixosModules.default
+        {
+          services.webhashtag-rust-server = {
+            enable = true;
+            tags = [ "rust" "typescript" ];
+            serverHost = "tag.example.com";
+            serverName = "Example Tag Server";
+            port = 3000;
+          };
+        }
+      ];
+    };
+  };
+}
+```
+
+The service runs with `DynamicUser` and stores redb data under `/var/lib/webhashtag-rust-server/data/webhashtag.redb`.
+
+For closed mode, provide `SECRET_KEY` through an environment file:
+
+```nix
+services.webhashtag-rust-server = {
+  enable = true;
+  tags = [ "rust" ];
+  mode = "closed";
+  environmentFile = "/run/secrets/webhashtag-rust-server.env";
+};
+```
+
 ## Environment
 
 - `TAGS` is required. Use a comma-separated list such as `rust,typescript,go`.
