@@ -115,6 +115,19 @@
               description = "Port to listen on.";
             };
 
+            openFirewall = lib.mkOption {
+              type = lib.types.bool;
+              default = false;
+              description = "Open the configured port in the firewall.";
+            };
+
+            listenAddress = lib.mkOption {
+              type = lib.types.str;
+              default = "127.0.0.1";
+              example = "0.0.0.0";
+              description = "Address the service binds to.";
+            };
+
             serverHost = lib.mkOption {
               type = lib.types.str;
               default = "localhost:${toString cfg.port}";
@@ -166,6 +179,7 @@
               environment = {
                 TAGS = lib.concatStringsSep "," cfg.tags;
                 PORT = toString cfg.port;
+                BIND_ADDRESS = cfg.listenAddress;
                 SERVER_HOST = cfg.serverHost;
                 SERVER_NAME = cfg.serverName;
                 MODE = cfg.mode;
@@ -182,6 +196,8 @@
                 EnvironmentFile = cfg.environmentFile;
               };
             };
+
+            networking.firewall.allowedTCPPorts = lib.mkIf cfg.openFirewall [ cfg.port ];
           };
         };
 

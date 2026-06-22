@@ -37,9 +37,10 @@ async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
         .unwrap_or_else(|_| "3000".to_string())
         .parse::<u16>()
         .map_err(|_| input_error("PORT must be a number from 0 to 65535"))?;
-    let listener = TcpListener::bind(("0.0.0.0", port)).await?;
+    let bind_address = bind_address(env::var("BIND_ADDRESS").ok());
+    let listener = TcpListener::bind((bind_address.as_str(), port)).await?;
     println!(
-        "Tag server running on http://localhost:{port} (mode: {})",
+        "Tag server running on http://{bind_address}:{port} (mode: {})",
         if config.is_closed() { "closed" } else { "open" }
     );
     axum::serve(listener, app).await?;
@@ -63,4 +64,21 @@ fn tags_from_env() -> Result<Vec<String>, Box<dyn Error + Send + Sync>> {
 
 fn input_error(message: impl Into<String>) -> Box<dyn Error + Send + Sync> {
     IoError::new(ErrorKind::InvalidInput, message.into()).into()
+}
+
+fn bind_address(value: Option<String>) -> String {
+    value.unwrap_or_else(|| "127.0.0.1".to_string())
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn bind_address_defaults_to_loopback_when_unset() {
+        assert_eq!(super::bind_address(None), "127.0.0.1");
+    }
+
+    #[test]
+    fn bind_address_uses_explicit_value() {
+        assert_eq!(super::bind_address(Some("0.0.0.0".to_string())), "0.0.0.0");
+    }
 }
