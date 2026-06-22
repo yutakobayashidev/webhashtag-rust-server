@@ -86,8 +86,18 @@ services.webhashtag-rust-server = {
 
 ## Development
 
+Enter the flake development shell first:
+
+```sh
+nix develop
+```
+
+Then run the usual checks:
+
 ```sh
 cargo test
 cargo fmt
 cargo clippy --all-targets --all-features -- -D warnings
 ```
+
+The background revalidation task starts when the server process starts. It checks registered backlinks once immediately after startup, then repeats every seven days while the process is running.
